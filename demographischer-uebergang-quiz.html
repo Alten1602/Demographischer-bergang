@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz: Der demographische Übergang – Erdkunde Klasse 9</title>
+<style>
+  :root{
+    --bg:#f3f6f4; --card:#ffffff; --ink:#1d2b2a; --muted:#566664;
+    --accent:#0f6b63; --accent-d:#0b514b; --line:#d5dfdc;
+    --ok:#1b7f3b; --ok-bg:#e4f4e8; --bad:#b3261e; --bad-bg:#fbe8e6; --warn-bg:#fff4d6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+  header{background:var(--accent);color:#fff;padding:20px 16px}
+  header h1{margin:0;font-size:1.35rem}
+  header p{margin:4px 0 0;opacity:.9;font-size:.95rem}
+  main{max-width:720px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .progress{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:6px}
+  .progress>div{height:100%;background:var(--accent);width:0;transition:width .3s}
+  .meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem;margin-bottom:12px}
+  h2{font-size:1.15rem;margin:0 0 6px}
+  .hint{color:var(--muted);font-size:.9rem;margin:0 0 12px}
+  .opts{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+  .opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:2px solid var(--line);border-radius:10px;cursor:pointer;background:#fff}
+  .opt:hover{border-color:var(--accent)}
+  .opt input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent);flex:none}
+  .opt.sel{border-color:var(--accent);background:#eaf5f3}
+  .opt.correct{border-color:var(--ok);background:var(--ok-bg)}
+  .opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+  .opt.missed{border-color:var(--ok);border-style:dashed;background:#fff}
+  .opt.locked{cursor:default}
+  .mark{margin-left:auto;font-weight:700;flex:none}
+  button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:12px 20px;cursor:pointer;background:var(--accent);color:#fff}
+  button:hover:not(:disabled){background:var(--accent-d)}
+  button:disabled{background:#a9b8b5;cursor:not-allowed}
+  button.sec{background:#fff;color:var(--accent);border:2px solid var(--accent)}
+  button.sec:hover{background:#eaf5f3}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .fb{border-radius:10px;padding:12px 14px;margin-top:6px}
+  .fb.ok{background:var(--ok-bg);border-left:5px solid var(--ok)}
+  .fb.bad{background:var(--bad-bg);border-left:5px solid var(--bad)}
+  .fb strong{display:block;margin-bottom:2px}
+  .intro ul{margin:8px 0 14px;padding-left:20px}
+  .note{background:var(--warn-bg);border-radius:10px;padding:10px 14px;font-size:.92rem;margin:12px 0}
+  .score{font-size:2.4rem;font-weight:800;color:var(--accent);margin:4px 0}
+  .review{border-top:1px solid var(--line);padding:12px 0}
+  .review h3{font-size:1rem;margin:0 0 4px}
+  .review p{margin:4px 0;font-size:.95rem}
+  svg{max-width:100%;height:auto;display:block;margin:8px auto}
+  .sr{position:absolute;left:-9999px}
+  @media (prefers-reduced-motion:reduce){.progress>div{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Der demographische Übergang</h1>
+  <p>Selbsttest Erdkunde · Klasse 9 · mit Rückmeldung nach jeder Frage</p>
+</header>
+<main id="app" aria-live="polite"></main>
+
+<script>
+/* ---------- Fragen ---------- */
+const QUESTIONS = [
+  {
+    type:"single",
+    q:"Was beschreibt das Modell des demographischen Übergangs?",
+    opts:[
+      {t:"Wie sich Geburten- und Sterberate und damit das Bevölkerungswachstum eines Landes im Verlauf seiner Entwicklung verändern", c:true},
+      {t:"Wie viele Menschen in die Städte ziehen und wieder zurück aufs Land", c:false},
+      {t:"Wie sich die Zahl der Einwanderer in ein Land verändert", c:false},
+      {t:"Wie sich die Wirtschaftsleistung eines Landes in vier Stufen entwickelt", c:false}
+    ],
+    expl:"Das Modell zeigt, wie sich Geburtenrate und Sterberate im Zuge von Industrialisierung und Entwicklung verändern. Daraus ergibt sich, wie stark die Bevölkerung wächst oder schrumpft."
+  },
+  {
+    type:"single",
+    q:"Wie berechnet man das natürliche Bevölkerungswachstum?",
+    opts:[
+      {t:"Geburtenrate minus Sterberate", c:true},
+      {t:"Geburtenrate plus Sterberate", c:false},
+      {t:"Zuwanderung minus Abwanderung", c:false},
+      {t:"Sterberate minus Geburtenrate", c:false}
+    ],
+    expl:"Natürliches Bevölkerungswachstum = Geburtenrate − Sterberate. Wanderungen (Zu- und Abwanderung) gehören nicht dazu, sie gehören zum Wanderungssaldo."
+  },
+  {
+    type:"single",
+    q:"Die Sterberate gibt an …",
+    opts:[
+      {t:"wie viele Menschen pro 1000 Einwohner in einem Jahr sterben", c:true},
+      {t:"wie viele Kinder eine Frau durchschnittlich bekommt", c:false},
+      {t:"wie alt Menschen in einem Land im Durchschnitt werden", c:false},
+      {t:"wie viele Menschen pro Jahr in ein anderes Land ziehen", c:false}
+    ],
+    expl:"Geburten- und Sterberate werden in Promille (‰) angegeben, also pro 1000 Einwohner und Jahr. Die durchschnittliche Kinderzahl heißt Fertilitätsrate, das Durchschnittsalter heißt Lebenserwartung."
+  },
+  {
+    type:"single",
+    q:"Phase 1 (vorindustrielle Phase): Welche Aussage trifft zu?",
+    opts:[
+      {t:"Geburtenrate und Sterberate sind beide hoch, die Bevölkerung wächst kaum", c:true},
+      {t:"Die Geburtenrate ist hoch, die Sterberate ist niedrig, die Bevölkerung wächst stark", c:false},
+      {t:"Beide Raten sind niedrig, die Bevölkerung schrumpft", c:false},
+      {t:"Die Sterberate sinkt, die Geburtenrate steigt", c:false}
+    ],
+    expl:"Früher starben viele Kinder an Krankheiten, Hunger gab es häufig. Es wurden viele Kinder geboren, aber auch viele Menschen starben früh. Beides hob sich fast auf, das Wachstum war gering."
+  },
+  {
+    type:"multi",
+    q:"Warum sinkt die Sterberate in Phase 2?",
+    hint:"Mehrere Antworten sind richtig.",
+    opts:[
+      {t:"bessere medizinische Versorgung (z. B. Impfungen)", c:true},
+      {t:"sauberes Trinkwasser und bessere Hygiene", c:true},
+      {t:"bessere Ernährung, z. B. durch höhere Ernteerträge", c:true},
+      {t:"die Geburtenrate sinkt gleichzeitig stark", c:false},
+      {t:"die Menschen bekommen mehr Kinder", c:false}
+    ],
+    expl:"Medizin, Hygiene und bessere Ernährung senken vor allem die Kindersterblichkeit und lassen die Lebenserwartung steigen. Die Geburtenrate bleibt in dieser Phase zunächst noch hoch."
+  },
+  {
+    type:"single", svg:true, fixed:true,
+    q:"Schau dir das Modell an: In welcher Phase ist der Abstand zwischen Geburtenrate und Sterberate am größten und das Bevölkerungswachstum damit am stärksten?",
+    opts:[
+      {t:"Phase 1", c:false},
+      {t:"Phase 2", c:true},
+      {t:"Phase 3", c:false},
+      {t:"Phase 4", c:false}
+    ],
+    expl:"In Phase 2 (frühe Übergangsphase) ist die Sterberate schon stark gesunken, die Geburtenrate aber noch hoch. Die Kurven liegen weit auseinander, die Bevölkerung wächst am schnellsten. Man spricht oft von einer „Bevölkerungsexplosion“."
+  },
+  {
+    type:"single",
+    q:"Warum bleibt die Geburtenrate in Phase 2 zunächst noch hoch?",
+    opts:[
+      {t:"Traditionen, fehlende Verhütungsmittel und Bildung; Kinder gelten als Arbeitskräfte und Altersvorsorge", c:true},
+      {t:"Es gibt zu wenige Frauen im gebärfähigen Alter", c:false},
+      {t:"Der Staat verbietet kleine Familien", c:false},
+      {t:"Weil die Sterberate gleichzeitig steigt", c:false}
+    ],
+    expl:"Verhaltensweisen und Wertvorstellungen ändern sich langsamer als die Lebensbedingungen. Wo es keine Rente gibt, sichern Kinder im Alter ab und helfen bei der Arbeit."
+  },
+  {
+    type:"single",
+    q:"Was passiert in Phase 3 (späte Übergangsphase)?",
+    opts:[
+      {t:"Die Geburtenrate sinkt, das Bevölkerungswachstum verlangsamt sich", c:true},
+      {t:"Die Sterberate steigt wieder stark an", c:false},
+      {t:"Die Geburtenrate steigt, das Wachstum wird noch stärker", c:false},
+      {t:"Beide Raten bleiben unverändert hoch", c:false}
+    ],
+    expl:"In Phase 3 wird die Geburtenrate niedriger und nähert sich der Sterberate. Der Abstand der Kurven wird kleiner, das Bevölkerungswachstum nimmt ab."
+  },
+  {
+    type:"multi",
+    q:"Welche Gründe führen dazu, dass Familien weniger Kinder bekommen?",
+    hint:"Mehrere Antworten sind richtig.",
+    opts:[
+      {t:"bessere Bildung und Berufschancen für Mädchen und Frauen", c:true},
+      {t:"Zugang zu Verhütungsmitteln und Familienplanung", c:true},
+      {t:"Leben in der Stadt: Kinder kosten mehr und werden nicht als Arbeitskräfte gebraucht", c:true},
+      {t:"soziale Absicherung wie Rente und Krankenversicherung", c:true},
+      {t:"häufigere Hungersnöte", c:false},
+      {t:"niedrigeres Einkommen und weniger Schulen", c:false}
+    ],
+    expl:"Wenn Frauen mehr Bildung haben, verhüten können und Kinder nicht mehr als Altersvorsorge nötig sind, sinkt die Kinderzahl. Hungersnöte und fehlende Schulen führen eher zu hohen Geburtenraten."
+  },
+  {
+    type:"single",
+    q:"Was ist typisch für Phase 4 (nachindustrielle Phase)?",
+    opts:[
+      {t:"Geburten- und Sterberate sind niedrig, die Bevölkerung stagniert oder schrumpft", c:true},
+      {t:"Die Geburtenrate ist sehr hoch, die Sterberate sehr niedrig", c:false},
+      {t:"Die Bevölkerung wächst am stärksten", c:false},
+      {t:"Es gibt keine Geburten mehr", c:false}
+    ],
+    expl:"In Phase 4 liegen beide Raten niedrig. Je nachdem, ob die Geburtenrate etwas über oder unter der Sterberate liegt, wächst die Bevölkerung leicht oder schrumpft. Deutschland ist ein Beispiel dafür."
+  },
+  {
+    type:"single", fixed:true,
+    q:"Ein Land hat eine sehr niedrige Sterberate, aber weiterhin sehr viele Kinder pro Frau (z. B. Niger mit rund 6 Kindern pro Frau). In welcher Phase befindet es sich am ehesten?",
+    opts:[
+      {t:"Phase 1", c:false},
+      {t:"Phase 2", c:true},
+      {t:"Phase 3", c:false},
+      {t:"Phase 4", c:false}
+    ],
+    expl:"Sehr hohe Geburtenrate bei deutlich gesunkener Sterberate heißt: starkes Wachstum, also Phase 2. In Phase 1 wäre die Sterberate noch hoch, in Phase 3 und 4 die Geburtenrate niedriger."
+  },
+  {
+    type:"single",
+    q:"Eine Bevölkerungspyramide hat eine sehr breite Basis und wird nach oben schnell schmaler. Was sagt das aus?",
+    opts:[
+      {t:"Es gibt viele Kinder und Jugendliche und nur wenige alte Menschen: junge, stark wachsende Bevölkerung", c:true},
+      {t:"Die Bevölkerung ist stark überaltert", c:false},
+      {t:"Es gibt gleich viele Menschen in allen Altersgruppen", c:false},
+      {t:"Die Bevölkerung schrumpft schnell", c:false}
+    ],
+    expl:"Die breite Basis zeigt viele Geburten. Die Spitze ist schmal, weil nur wenige Menschen ein hohes Alter erreichen. Diese Pyramidenform passt zu Ländern in Phase 1 und 2."
+  },
+  {
+    type:"single",
+    q:"Welche Folge hat Phase 4 oft für ein Land wie Deutschland?",
+    opts:[
+      {t:"Die Gesellschaft altert: Rente, Pflege und Gesundheitsversorgung werden zur Herausforderung", c:true},
+      {t:"Es gibt zu viele Schulkinder und zu wenig Schulen", c:false},
+      {t:"Die Kindersterblichkeit steigt", c:false},
+      {t:"Es gibt keine Auswirkungen auf die Gesellschaft", c:false}
+    ],
+    expl:"Wenige Geburten und eine hohe Lebenserwartung führen zu einem wachsenden Anteil älterer Menschen. Die Bevölkerungspyramide nimmt eine „Urnenform“ an, weniger Erwerbstätige müssen mehr Rentner mitfinanzieren."
+  },
+  {
+    type:"single",
+    q:"Wie viele Kinder muss eine Frau im Durchschnitt bekommen, damit die Bevölkerung langfristig stabil bleibt (ohne Zu- und Abwanderung)?",
+    opts:[
+      {t:"etwa 1,0 Kinder", c:false},
+      {t:"etwa 2,1 Kinder", c:true},
+      {t:"etwa 3,5 Kinder", c:false},
+      {t:"etwa 5,0 Kinder", c:false}
+    ],
+    expl:"Dieser Wert heißt Reproduktionsniveau und liegt bei etwa 2,1 Kindern pro Frau. Etwas mehr als 2, weil nicht alle Kinder das Elternalter erreichen. In Deutschland liegt die Fertilitätsrate seit Jahrzehnten darunter."
+  },
+  {
+    type:"single",
+    q:"„Das Modell trifft für jedes Land genau so zu und läuft überall gleich schnell ab.“ Stimmt diese Aussage?",
+    opts:[
+      {t:"Nein, es ist ein vereinfachtes Modell, die Verläufe unterscheiden sich je nach Land (Tempo, Politik, Kultur, Krisen)", c:true},
+      {t:"Ja, alle Länder durchlaufen dieselben Phasen im selben Tempo", c:false},
+      {t:"Ja, aber nur in Europa", c:false},
+      {t:"Nein, das Modell wurde widerlegt und wird nicht mehr genutzt", c:false}
+    ],
+    expl:"Das Modell ist eine Vereinfachung. In Europa dauerte der Übergang sehr lange, manche Länder in Asien durchliefen ihn viel schneller. Auch Kriege, Politik, Religion und Migration wirken mit."
+  }
+];
+
+/* ---------- Hilfsfunktionen ---------- */
+const $app = document.getElementById("app");
+const letters = "ABCDEFGH";
+let order, idx, answers, checked, current;
+
+function shuffle(a){
+  a = a.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+const MODEL_SVG = `
+<svg viewBox="0 0 600 290" role="img" aria-label="Modell des demographischen Übergangs mit Geburtenrate und Sterberate in vier Phasen">
+  <rect x="60" y="20" width="120" height="210" fill="#eef3f2"/>
+  <rect x="180" y="20" width="120" height="210" fill="#e3ecea"/>
+  <rect x="300" y="20" width="120" height="210" fill="#eef3f2"/>
+  <rect x="420" y="20" width="120" height="210" fill="#e3ecea"/>
+  <line x1="60" y1="230" x2="545" y2="230" stroke="#1d2b2a" stroke-width="2"/>
+  <line x1="60" y1="20" x2="60" y2="230" stroke="#1d2b2a" stroke-width="2"/>
+  <text x="120" y="252" text-anchor="middle" font-size="15" font-weight="700">Phase 1</text>
+  <text x="240" y="252" text-anchor="middle" font-size="15" font-weight="700">Phase 2</text>
+  <text x="360" y="252" text-anchor="middle" font-size="15" font-weight="700">Phase 3</text>
+  <text x="480" y="252" text-anchor="middle" font-size="15" font-weight="700">Phase 4</text>
+  <text x="14" y="125" font-size="12" transform="rotate(-90 14 125)" text-anchor="middle">Rate (je 1000 Einwohner)</text>
+  <path d="M60 55 L250 55 C320 55 350 195 430 205 L540 215" fill="none" stroke="#c2410c" stroke-width="4"/>
+  <path d="M60 75 L150 75 C190 75 200 195 250 202 L540 205" fill="none" stroke="#1d4ed8" stroke-width="4"/>
+  <text x="95" y="45" font-size="14" font-weight="700" fill="#c2410c">Geburtenrate</text>
+  <text x="400" y="190" font-size="14" font-weight="700" fill="#1d4ed8">Sterberate</text>
+  <text x="300" y="278" text-anchor="middle" font-size="12" fill="#566664">Vereinfachtes Schema, keine realen Messwerte</text>
+</svg>`;
+
+/* ---------- Ansichten ---------- */
+function start(){
+  $app.innerHTML = `
+  <section class="card intro">
+    <h2>Teste dein Wissen</h2>
+    <p>${QUESTIONS.length} Fragen zum demographischen Übergang. Nach jeder Antwort bekommst du sofort eine Rückmeldung mit Erklärung. Am Ende siehst du, was du wiederholen solltest.</p>
+    <ul>
+      <li>Bei manchen Fragen sind <strong>mehrere Antworten</strong> richtig.</li>
+      <li>Die Antwortreihenfolge ist bei jedem Durchgang gemischt (außer bei den Fragen mit Phase 1 bis 4).</li>
+      <li>Deine Antworten werden nicht gespeichert.</li>
+    </ul>
+    <p class="note">Hinweis: Manche Schulbücher unterscheiden vier, andere fünf Phasen. Dieses Quiz nutzt das Modell mit vier Phasen. Wenn in deinem Buch die Phasen anders benannt sind, achte auf die Merkmale, nicht auf die Zahl.</p>
+    <button id="go">Quiz starten</button>
+  </section>`;
+  document.getElementById("go").onclick = () => run(QUESTIONS.map((_,i)=>i));
+}
+
+function run(list){
+  order = list;
+  idx = 0; answers = {}; checked = false;
+  show();
+}
+
+function show(){
+  const qi = order[idx], Q = QUESTIONS[qi];
+  current = {qi, opts: Q.fixed ? Q.opts.slice() : shuffle(Q.opts)};
+  checked = false;
+  const pct = Math.round(idx/order.length*100);
+  $app.innerHTML = `
+  <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><div style="width:${pct}%"></div></div>
+  <div class="meta"><span>Frage ${idx+1} von ${order.length}</span><span>${Q.type==="multi"?"Mehrfachauswahl":"Eine Antwort"}</span></div>
+  <section class="card">
+    <h2>${esc(Q.q)}</h2>
+    ${Q.hint?`<p class="hint">${esc(Q.hint)}</p>`:""}
+    ${Q.svg?MODEL_SVG:""}
+    <div class="opts" id="opts" role="${Q.type==="multi"?"group":"radiogroup"}">
+      ${current.opts.map((o,i)=>`
+        <label class="opt" data-i="${i}">
+          <input type="${Q.type==="multi"?"checkbox":"radio"}" name="o" value="${i}">
+          <span><strong>${letters[i]}</strong> &nbsp;${esc(o.t)}</span>
+          <span class="mark" aria-hidden="true"></span>
+        </label>`).join("")}
+    </div>
+    <div id="fb"></div>
+    <div class="row"><button id="check" disabled>Antwort prüfen</button></div>
+  </section>`;
+  const inputs = [...document.querySelectorAll("#opts input")];
+  const btn = document.getElementById("check");
+  inputs.forEach(inp => inp.addEventListener("change", () => {
+    if(checked) return;
+    inputs.forEach(x => x.closest(".opt").classList.toggle("sel", x.checked));
+    btn.disabled = !inputs.some(x => x.checked);
+  }));
+  btn.onclick = check;
+}
+
+function check(){
+  checked = true;
+  const Q = QUESTIONS[current.qi];
+  const inputs = [...document.querySelectorAll("#opts input")];
+  const chosen = inputs.filter(x=>x.checked).map(x=>+x.value);
+  const correctIdx = current.opts.map((o,i)=>o.c?i:-1).filter(i=>i>=0);
+  const ok = chosen.length===correctIdx.length && chosen.every(i=>correctIdx.includes(i));
+  answers[current.qi] = {ok, chosen, opts: current.opts};
+
+  inputs.forEach(inp=>{
+    const i=+inp.value, lab=inp.closest(".opt"), mark=lab.querySelector(".mark");
+    inp.disabled = true; lab.classList.add("locked"); lab.classList.remove("sel");
+    const isC = current.opts[i].c, isSel = chosen.includes(i);
+    if(isC && isSel){lab.classList.add("correct");mark.textContent="✓ richtig";}
+    else if(!isC && isSel){lab.classList.add("wrong");mark.textContent="✗ falsch";}
+    else if(isC && !isSel){lab.classList.add("missed");mark.textContent="✓ hätte dazugehört";}
+  });
+
+  let head;
+  if(ok) head = "Richtig!";
+  else if(Q.type==="multi" && chosen.some(i=>current.opts[i].c) ) head = "Fast – nicht ganz vollständig oder richtig.";
+  else head = "Leider nicht richtig.";
+  document.getElementById("fb").innerHTML =
+    `<div class="fb ${ok?"ok":"bad"}" role="status"><strong>${head}</strong>${esc(Q.expl)}</div>`;
+
+  const btn = document.getElementById("check");
+  const last = idx === order.length-1;
+  btn.textContent = last ? "Ergebnis anzeigen" : "Weiter";
+  btn.onclick = () => { if(last) result(); else { idx++; show(); window.scrollTo({top:0}); } };
+  btn.focus();
+}
+
+function result(){
+  const total = order.length;
+  const right = order.filter(qi => answers[qi] && answers[qi].ok).length;
+  const wrongList = order.filter(qi => !(answers[qi] && answers[qi].ok));
+  const p = Math.round(right/total*100);
+  let msg;
+  if(p===100) msg="Perfekt! Du hast den demographischen Übergang richtig gut verstanden.";
+  else if(p>=80) msg="Sehr gut! Du kannst das Modell sicher anwenden. Schau dir nur noch die Erklärungen unten an.";
+  else if(p>=60) msg="Gut! Die Grundlagen sitzen. Wiederhole die Fragen unten und schau noch einmal in dein Heft oder Buch.";
+  else if(p>=40) msg="Du bist auf dem Weg. Lies das Kapitel nochmal in Ruhe und probiere das Quiz danach erneut.";
+  else msg="Das war noch schwer, aber das ist normal am Anfang. Arbeite das Kapitel noch einmal durch, mach dir eine Skizze des Modells und versuche es dann nochmal.";
+
+  const review = wrongList.map(qi=>{
+    const Q = QUESTIONS[qi];
+    const good = Q.opts.filter(o=>o.c).map(o=>`<li>${esc(o.t)}</li>`).join("");
+    return `<div class="review"><h3>${esc(Q.q)}</h3>
+      <p><strong>Richtig wäre:</strong></p><ul>${good}</ul>
+      <p>${esc(Q.expl)}</p></div>`;
+  }).join("");
+
+  $app.innerHTML = `
+  <div class="progress"><div style="width:100%"></div></div>
+  <section class="card">
+    <h2>Dein Ergebnis</h2>
+    <div class="score">${right} von ${total}</div>
+    <p>${msg}</p>
+    <div class="row">
+      ${wrongList.length?`<button id="again">Nur falsche Fragen wiederholen (${wrongList.length})</button>`:""}
+      <button class="sec" id="restart">Alles neu starten</button>
+    </div>
+  </section>
+  ${wrongList.length?`<section class="card"><h2>Das solltest du wiederholen</h2>${review}</section>`:""}`;
+  const a = document.getElementById("again");
+  if(a) a.onclick = () => { run(wrongList); window.scrollTo({top:0}); };
+  document.getElementById("restart").onclick = () => { start(); window.scrollTo({top:0}); };
+  window.scrollTo({top:0});
+}
+
+start();
+</script>
+</body>
+</html>
